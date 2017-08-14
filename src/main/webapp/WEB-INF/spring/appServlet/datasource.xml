@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context" xmlns:cache="http://www.springframework.org/cache" xmlns:util="http://www.springframework.org/schema/util"
+
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/cache    
+        http://www.springframework.org/cache/cache.xsd
+        http://www.springframework.org/schema/util    
+        http://www.springframework.org/schema/util/spring-util.xsd"
+>
+
+
+    <bean id="appProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+				<value>classpath:jdbc.pg.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean name="dataSource.pg" class="org.apache.tomcat.jdbc.pool.DataSource" destroy-method="close">
+        <property name="url" value="${pg.url}" />
+        <property name="username" value="${pg.username}" />
+        <property name="password" value="${pg.password}" />
+        <property name="driverClassName" value="org.postgresql.Driver"/>
+        <property name="testOnBorrow" value="true"/>
+        <property name="testWhileIdle" value="false"/>
+        <property name="validationQuery" value="select 1"/>
+        <property name="jdbcInterceptors" value="org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer"/>
+        <property name="minIdle" value="5"/>
+        <property name="timeBetweenEvictionRunsMillis" value="5000"/>
+        <property name="validationInterval" value="30000"/>
+        <property name="maxWait" value="30000"/>
+        <property name="minEvictableIdleTimeMillis" value="5000"/>
+        <property name="maxActive" value="200"/>
+        <property name="maxIdle" value="10"/>
+    </bean>
+    
+    <bean id="jdbcTemplate.pg"  class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource.pg" />
+		<property name="nativeJdbcExtractor">
+			<bean class="org.springframework.jdbc.support.nativejdbc.SimpleNativeJdbcExtractor" />
+		</property>
+	</bean>
+	
+	<bean id="jdbcPgBaseService" abstract="true" class="com.iati.rapor.jdbc.BaseService">
+		<property name="schemaName" value="public" />
+		<property name="procExecutor" ref="proc.executor.pg" />
+	</bean>
+
+	<bean id="proc.executor.pg" class="com.iati.rapor.jdbc.PGProcedureWithTimesExecutor">
+		<property name="jdbcTemplate" ref="jdbcTemplate.pg" />
+		<property name="schemaName" value="public" />
+	</bean>
+	
+	<bean id="pgService" parent="jdbcPgBaseService" class="com.iati.rapor.jdbc.proc.PgService" />
+</beans>
